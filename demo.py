@@ -4,9 +4,7 @@ from src.model import DFDRNN
 if __name__=="__main__":
     name = "Gdataset"
     nums = 7
-    # nums = [1,2,3,4,5,6,7,8,9,10]
-    # nums = [16,17,18,19,20]
-    topks = 20
+
 
     args = parse(print_help=True)
     args.dataset_name = name

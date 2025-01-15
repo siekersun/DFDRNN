@@ -30,14 +30,8 @@ class FullGraphDataset(Dataset):
         a_edge = self.get_union_edge(union_type="uv-vu")
         s_edge = self.get_union_edge(union_type="u-v")
 
-        # a_x = self.getx_a()
         s_x = self.getx_s()
-
-        # a_x = a_x.to_sparse()
         s_x = s_x.to_sparse()
-        # norm_a_x = gcn_norm(edge_index=a_x, add_self_loops=False).to_dense()
-        # a_x = norm_a_x * torch.norm(a_x) / torch.norm(norm_a_x)
-
         norm_s_x = gcn_norm(edge_index=s_x, add_self_loops=False).to_dense()
         s_x = norm_s_x * torch.norm(s_x) / torch.norm(norm_s_x)
 

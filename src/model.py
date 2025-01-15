@@ -202,23 +202,22 @@ class DFDRNN(BaseModel):
         self.save_hyperparameters()
 
     def step(self, batch: FullGraphData):
-        # a_x = batch.a_x
         s_x = batch.s_x
         a_edge_index, a_edge_weight = batch.a_edge[:2]
         s_edge_index, s_edge_weight = batch.s_edge[:2]
         label = batch.label
-        predict,contract_loss = self.forward(None, s_x, a_edge_index, a_edge_weight, s_edge_index, s_edge_weight)
+        predict,contract_loss = self.forward(s_x, a_edge_index, a_edge_weight, s_edge_index, s_edge_weight)
 
         # if not self.training:
         predict = predict[batch.valid_mask.reshape(*predict.shape)]
         label = label[batch.valid_mask]
         ans = self.loss_fn(predict=predict, label=label)
-        # ans["loss"] += 0.1 * contract_loss
+
         ans["predict"] = predict.reshape(-1)
         ans["label"] = label.reshape(-1)
         return ans
 
-    def forward(self, a_x, s_x, a_edge_index, a_edge_weight, s_edge_index, s_edge_weight):
+    def forward(self, s_x, a_edge_index, a_edge_weight, s_edge_index, s_edge_weight):
 
         a_edge_index, a_edge_weight = self.edge_dropout(a_edge_index, a_edge_weight)
 
@@ -231,7 +230,6 @@ class DFDRNN(BaseModel):
 
         #######
         a_x = a_edge_index.to_dense()
-        # s_x = s_edge_index.to_dense()
 
         ax, sx = self.short_embedding(a_x, s_x)
         a_x, s_x = ax, sx

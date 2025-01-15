@@ -13,7 +13,7 @@ import pytorch_lightning as pl
 from . import DATA_TYPE_REGISTRY
 
 class DRDataset():
-    def __init__(self, dataset_name="Gdataset", drug_neighbor_num=15, disease_neighbor_num=15,feature_topk=10,seed=42):
+    def __init__(self, dataset_name="Gdataset", drug_neighbor_num=15, disease_neighbor_num=15,feature_topk=20,seed=42):
         assert dataset_name in ["Cdataset", "Gdataset", "lagcn", "lrssl", "hdvd"]
         self.dataset_name = dataset_name
         if dataset_name=="lrssl":
