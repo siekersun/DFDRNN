@@ -60,33 +60,18 @@ class EncoderLayer(nn.Module):
                                     qk_dim=qk_dim,v_dim=out_features, head_size=head_size,
                                     attention_dropout_rate=attention_dropout_rate, dropout=dropout,
                                     gamma=gamma, bias=bias, share=share)
-        # self.a_encoder_a = bgnn.GCNConv(size_u=size_u, size_v=size_v, in_channels=in_features, out_channels=out_features,
-        #                                  add_self_loops=False,bias=bias,dropout=dropout, share=share)
-        # self.a_encoder_s = bgnn.GCNConv(size_u=size_u, size_v=size_v, in_channels=in_features, out_channels=out_features,
-        #                                   add_self_loops=False,bias=bias,dropout=dropout, share=share)
 
     def forward(self, a_x, s_x, a_edge_index, s_edge_index):
         sx1 = self.a_encoder_a(a_x, a_edge_index)
         ax1 = self.a_encoder_a(s_x, a_edge_index)
-        # sx2 = self.a_encoder_s(s_x, s_edge_index)
 
         ax2 = self.a_encoder_s(a_x, s_edge_index)
         sx2 = self.a_encoder_s(s_x, s_edge_index)
-        # ax2 = self.a_encoder_a(a_x, s_edge_index)
-
-        # drug_loss = self.con.contract_loss(sx1[:self.size_u, :], sx2[:self.size_u, :], self.temperature) + \
-        #             self.con.contract_loss(ax1[:self.size_u, :], ax2[:self.size_u, :], self.temperature)
-        # dis_loss = self.con.contract_loss(sx1[self.size_u:, :], sx2[self.size_u:, :], self.temperature) + \
-        #            self.con.contract_loss(ax1[self.size_u:, :], ax2[self.size_u:, :], self.temperature)
-        drug_loss = 0
-        dis_loss = 0
 
         ax = ax1 + ax2
         sx = sx1 + sx2
 
-        # ax = ax2 + sx1
-
-        return ax, sx, (drug_loss + dis_loss) / (self.size_u + self.size_v)
+        return ax, sx
 
 
 class InnerProductDecoder(nn.Module):
@@ -202,6 +187,7 @@ class DFDRNN(BaseModel):
         self.save_hyperparameters()
 
     def step(self, batch: FullGraphData):
+
         s_x = batch.s_x
         a_edge_index, a_edge_weight = batch.a_edge[:2]
         s_edge_index, s_edge_weight = batch.s_edge[:2]
@@ -235,12 +221,10 @@ class DFDRNN(BaseModel):
         a_x, s_x = ax, sx
         layerout_a = [ax]
         layerout_s = [sx]
-        contract_loss = 0
         for encoder in self.encoders:
-            ax, sx, loss = encoder(a_x, s_x, a_edge_index, s_edge_index)
+            ax, sx= encoder(a_x, s_x, a_edge_index, s_edge_index)
             a_x = ax + layerout_a[-1]
             s_x = sx + layerout_s[-1]
-            contract_loss += loss
             layerout_a.append(a_x)
             layerout_s.append(s_x)
         ax = torch.stack(layerout_a[1:])
@@ -248,11 +232,10 @@ class DFDRNN(BaseModel):
         attention = torch.softmax(self.attention, dim=0)
         ax = torch.sum(ax * attention, dim=0)
         sx = torch.sum(sx * attention, dim=0)
-        contract_loss = contract_loss/self.layer_num
 
         score = self.decoder(ax, sx)
 
-        return score,contract_loss
+        return score
 
     def training_step(self, batch, batch_idx=None):
         return self.step(batch)
